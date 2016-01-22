@@ -4,6 +4,7 @@
 #include "http_server.h"
 
 int main(int argc, char **argv) {
+	// default http server port
 	int port = 8081;
 	if (argc >= 2) {
 		port = atoi(argv[1]);

@@ -2,6 +2,7 @@
 #include "request_parser.h"
 #include "html_builder.h"
 #include "file_mng.h"
+#include "cgi_mng.h"
 
 http_server::http_server()
 {
@@ -77,6 +78,10 @@ void* client_thread(void* args) {
  	if (strcasecmp(parser.get_method(), "GET") == 0) {
 		file_mng filemng;
 		filemng.send_file(client_fd, "index.html");
+	}
+	else if (strcasecmp(parser.get_method(), "POST") == 0) {
+		cgi_mng cgimng;
+		cgimng.execute_cgi(client_fd, "color.cgi");
 	}
 	
 	return NULL;

@@ -15,7 +15,8 @@ public:
 	
 private:
 	string method;				// request method, GET, POST ...
-	string url;
+	string url;					// the url
+	bool is_cgi;				// need execute cgi
 };
 
 #endif
