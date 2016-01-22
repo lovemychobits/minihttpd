@@ -29,7 +29,7 @@ void cgi_mng::execute_cgi(int client_fd, const char* cgi_name)
 		string cgi_path = string("html/") + string(cgi_name);
 		dup2(fd[1], 1);
 		execl(cgi_path.c_str(), "");
-		sleep(30);
+		
 	}
 	else {						// parent process
 		html_builder builder;
