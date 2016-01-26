@@ -6,6 +6,7 @@
 int main(int argc, char **argv) {
 	// default http server port
 	int port = 8081;
+	
 	if (argc >= 2) {
 		port = atoi(argv[1]);
 	}
@@ -14,7 +15,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
-	cout << "server start" << endl;
+	cout << "server start on port=[" << port << "]" << endl;
 	server.start();
     return 0;
 }

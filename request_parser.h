@@ -6,13 +6,16 @@
 class request_parser {
 public:
 	request_parser();
-	~ request_parser();
+	virtual ~request_parser();
 	
-	bool parse_http_head(const char* request);
+	bool parse_http_request(int client_fd);
 	
 	const char* get_method();
 	const char* get_url();
 	int get_content_length();
+
+protected:
+	int get_line(client_fd, char* buf, int buf_len);
 	
 private:
 	string method;				// request method, GET, POST ...

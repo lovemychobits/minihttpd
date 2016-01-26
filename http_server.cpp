@@ -22,15 +22,21 @@ bool http_server::init(int port, const char* ip)
 		cout << "create server sock failed." << endl;
 		return false;
 	}
-	
+
+	// set reuse address
 	int option = 1;
 	if (setsockopt (server_sock, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
 	{
 		cout << "set sockopt failed" << endl;
 		return false;
 	}
-	
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	if (ip == NULL) {
+		addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	}
+	else {
+		addr.sin_addr.s_addr = htonl(inet_addr(ip));
+	}
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	socklen_t addr_len = sizeof(addr);
@@ -50,64 +56,22 @@ bool http_server::init(int port, const char* ip)
 
 void* client_thread(void* args) {
 	cout << "begin client request" << endl;
-	
 	int client_fd = *(int*)args;
-	char buf[1024 * 4] = {0};
-	size_t len = 0;
-	// http head end with tow CRLF
-	while (len < sizeof(buf)-1
-		&& buf[len] != '\r'
-		&& buf[len-1] != '\n'
-		&& buf[len-2] != '\r'
-		&& buf[len-3] != '\n'
-	) {
-		int ret = read(client_fd, buf + len, sizeof(buf) - len);
-		if (ret <= 0) {
-			break;
-		}
-		len += ret;
-	}
-	
-	// to parse request
-	cout << "client request url=[" << buf << "]" << endl;
-	if (strlen(buf) < 10) {
-		cout << "error request url" << endl;
-		close(client_fd);
-		return NULL;
-	}
-	request_parser parser;
-	if (!parser.parse_http_head(buf)) {
-		cout << "parse http request failed." << endl;
-		cout << "request=[" << buf << "]" << endl;
-		return NULL;
- 	}
- 	
-	// to get http content
-	int content_len = parser.get_content_length();
-	char* content_buf = NULL;
-	if (content_len != 0) {
-		content_buf = new char[content_len + 1];
-		int recvd = 0;
-		while (recvd < content_len) {
-			int ret = read(client_fd, content_buf + recvd, content_len - recvd);
-			if (ret <= 0) {
-				break;
-			}
-			recvd += ret;
-		}
-	content_buf[content_len + 1] = '\0'; 
-	}
-	cout << "client content=[" << content_buf << "]" << endl;
 
- 	cout << "client request methond=" << parser.get_method() << endl;
+	// parse http request
+	request_parser parser;
+	parser.parse_http_request(client_fd);
+	
  	if (strcasecmp(parser.get_method(), "GET") == 0) {
 		file_mng filemng;
-		filemng.send_file(client_fd, "index.html");
+		filemng.send_file(client_fd, parser.get_url());
 	}
 	else if (strcasecmp(parser.get_method(), "POST") == 0) {
 		cgi_mng cgimng;
 		cgimng.execute_cgi(client_fd, "color.cgi", NULL);
 	}
+
+	// disconnect to the http client
 	close(client_fd);
 	
 	return NULL;
