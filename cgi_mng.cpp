@@ -11,7 +11,7 @@ cgi_mng::~cgi_mng()
 
 }
 
-void cgi_mng::execute_cgi(int client_fd, const char* cgi_name)
+void cgi_mng::execute_cgi(int client_fd, const char* cgi_name, const char* param)
 {
 	int fd[2];			// for the pipe
 	if (pipe(fd) < 0) {

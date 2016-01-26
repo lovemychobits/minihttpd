@@ -8,15 +8,17 @@ public:
 	request_parser();
 	~ request_parser();
 	
-	bool parse_http_request(const char* request);
+	bool parse_http_head(const char* request);
 	
 	const char* get_method();
 	const char* get_url();
+	int get_content_length();
 	
 private:
 	string method;				// request method, GET, POST ...
 	string url;					// the url
 	bool is_cgi;				// need execute cgi
+	int content_length;			// html content length
 };
 
 #endif

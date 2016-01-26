@@ -52,11 +52,14 @@ void* client_thread(void* args) {
 	cout << "begin client request" << endl;
 	
 	int client_fd = *(int*)args;
-	char buf[1024] = {0};
+	char buf[1024 * 4] = {0};
 	size_t len = 0;
+	// http head end with tow CRLF
 	while (len < sizeof(buf)-1
 		&& buf[len] != '\r'
 		&& buf[len-1] != '\n'
+		&& buf[len-2] != '\r'
+		&& buf[len-3] != '\n'
 	) {
 		int ret = read(client_fd, buf + len, sizeof(buf) - len);
 		if (ret <= 0) {
@@ -66,14 +69,36 @@ void* client_thread(void* args) {
 	}
 	
 	// to parse request
-	cout << "parse client request" << endl;
+	cout << "client request url=[" << buf << "]" << endl;
+	if (strlen(buf) < 10) {
+		cout << "error request url" << endl;
+		close(client_fd);
+		return NULL;
+	}
 	request_parser parser;
-	if (!parser.parse_http_request(buf)) {
+	if (!parser.parse_http_head(buf)) {
 		cout << "parse http request failed." << endl;
 		cout << "request=[" << buf << "]" << endl;
 		return NULL;
  	}
  	
+	// to get http content
+	int content_len = parser.get_content_length();
+	char* content_buf = NULL;
+	if (content_len != 0) {
+		content_buf = new char[content_len + 1];
+		int recvd = 0;
+		while (recvd < content_len) {
+			int ret = read(client_fd, content_buf + recvd, content_len - recvd);
+			if (ret <= 0) {
+				break;
+			}
+			recvd += ret;
+		}
+	content_buf[content_len + 1] = '\0'; 
+	}
+	cout << "client content=[" << content_buf << "]" << endl;
+
  	cout << "client request methond=" << parser.get_method() << endl;
  	if (strcasecmp(parser.get_method(), "GET") == 0) {
 		file_mng filemng;
@@ -81,8 +106,9 @@ void* client_thread(void* args) {
 	}
 	else if (strcasecmp(parser.get_method(), "POST") == 0) {
 		cgi_mng cgimng;
-		cgimng.execute_cgi(client_fd, "color.cgi");
+		cgimng.execute_cgi(client_fd, "color.cgi", NULL);
 	}
+	close(client_fd);
 	
 	return NULL;
 }
@@ -100,10 +126,13 @@ void http_server::start()
 		}
 		
 		pthread_t client_id;
-		if (pthread_create(&client_id, NULL, client_thread, (void*)&client_sock) != 0) {
+		/*if (pthread_create(&client_id, NULL, client_thread, (void*)&client_sock) != 0) {
 			cout << "create thread failed" << endl;
 			continue;
-		}
+		}*/
+
+		// for test, do in single thread
+		client_thread((void*)&client_sock);
 	}
 }
 
