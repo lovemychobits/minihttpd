@@ -60,7 +60,10 @@ void* client_thread(void* args) {
 
 	// parse http request
 	request_parser parser;
-	parser.parse_http_request(client_fd);
+	if (!parser.parse_http_request(client_fd)) {
+		cout << "parse http request failed." << endl;
+		return NULL;
+	}
 	
  	if (strcasecmp(parser.get_method(), "GET") == 0) {
 		file_mng filemng;
@@ -68,7 +71,7 @@ void* client_thread(void* args) {
 	}
 	else if (strcasecmp(parser.get_method(), "POST") == 0) {
 		cgi_mng cgimng;
-		cgimng.execute_cgi(client_fd, "color.cgi", NULL);
+		cgimng.execute_cgi(client_fd, parser.get_url(), parser.get_content());
 	}
 
 	// disconnect to the http client
